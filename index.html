@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Chunk Visualizer</title>
+<meta name="description" content="See how different chunking strategies split your text. Side-by-side comparison of fixed, recursive, sentence, and paragraph chunking with overlap regions highlighted.">
+<style>
+:root {
+  --bg: #f9f3e7;
+  --panel: #fefaf0;
+  --ink: #1a1408;
+  --ink-soft: #5e503a;
+  --rule: #c4b08a;
+  --rule-soft: #e5d8b8;
+  --accent: #7c2429;
+  --accent-soft: #f0d4c8;
+  --overlap: rgba(124, 36, 41, 0.18);
+  --chunk-a: #e8d8b8;
+  --chunk-b: #d4c098;
+}
+[data-theme="dark"] {
+  --bg: #1a1408;
+  --panel: #221a0e;
+  --ink: #f0e3c4;
+  --ink-soft: #a89878;
+  --rule: #4a3d24;
+  --rule-soft: #3a3018;
+  --accent: #d8624a;
+  --accent-soft: #3a2418;
+  --overlap: rgba(216, 98, 74, 0.22);
+  --chunk-a: #3a3018;
+  --chunk-b: #4a3d24;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--ink); min-height: 100vh;
+  font-family: 'Courier New', 'Courier Prime', ui-monospace, monospace;
+  line-height: 1.55;
+}
+.wrap { max-width: 1280px; margin: 0 auto; padding: 40px 28px 80px; }
+header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid var(--ink); padding-bottom: 14px; margin-bottom: 12px; }
+h1 { font-size: 24px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
+.cardno { font-size: 11px; color: var(--ink-soft); letter-spacing: 0.15em; }
+.tagline { color: var(--ink-soft); margin-bottom: 32px; font-size: 13px; font-style: italic; }
+button.theme {
+  background: transparent; border: 1px solid var(--rule); color: var(--ink);
+  padding: 6px 14px; font-family: inherit; font-size: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em;
+}
+button.theme:hover { background: var(--rule-soft); }
+.controls { background: var(--panel); border: 1px solid var(--rule); padding: 20px; margin-bottom: 24px; }
+.control-row { display: grid; grid-template-columns: 1fr 200px 200px 160px; gap: 16px; align-items: end; }
+@media (max-width: 800px) { .control-row { grid-template-columns: 1fr; } }
+label { display: block; font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+textarea, input[type="number"], select {
+  width: 100%; background: var(--bg); border: 1px solid var(--rule); color: var(--ink);
+  padding: 10px 12px; font-family: inherit; font-size: 14px;
+}
+textarea { min-height: 140px; resize: vertical; line-height: 1.6; }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft); font-weight: 700; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px dashed var(--rule); }
+.strategies { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .strategies { grid-template-columns: 1fr; } }
+.strategy { background: var(--panel); border: 1px solid var(--rule); padding: 18px; }
+.strategy-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.strategy-desc { color: var(--ink-soft); font-size: 12px; margin-bottom: 14px; }
+.stats { display: flex; gap: 16px; padding: 8px 0; border-bottom: 1px dashed var(--rule); margin-bottom: 14px; font-size: 12px; color: var(--ink-soft); }
+.stats strong { color: var(--ink); font-weight: 700; }
+.chunks { max-height: 480px; overflow-y: auto; padding-right: 8px; }
+.chunk { padding: 10px 12px; margin-bottom: 6px; font-size: 13px; line-height: 1.55; position: relative; white-space: pre-wrap; word-break: break-word; }
+.chunk:nth-child(odd) { background: var(--chunk-a); }
+.chunk:nth-child(even) { background: var(--chunk-b); }
+.chunk-meta { font-size: 10px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; font-weight: 700; }
+.overlap { background: var(--overlap); padding: 1px 2px; }
+footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--ink-soft); }
+footer a { color: var(--accent); }
+.help { background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); padding: 12px 16px; font-size: 12px; margin-top: 20px; line-height: 1.6; }
+.help strong { color: var(--ink); }
+</style>
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px" onfocus="this.style.left='8px';this.style.top='8px';this.style.zIndex='100'">Skip to content</a>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>RAG Chunk Visualizer</h1>
+      <div class="cardno">CARD No. 2026 · CHUNKING REFERENCE</div>
+    </div>
+    <button class="theme" id="theme-toggle" aria-label="Toggle theme">Toggle theme</button>
+  </header>
+  <p class="tagline">Paste text. See four chunking strategies side by side. Overlap regions are highlighted.</p>
+
+  <main id="main">
+    <div class="controls">
+      <label for="text">Source text</label>
+      <textarea id="text" placeholder="Paste a passage of text here. Try a 300-1500 word section to see the strategies diverge.">The art of chunking text for retrieval-augmented generation is deceptively important. A chunk that is too small loses context; a chunk that is too large dilutes relevance and wastes tokens.
+
+Fixed-size chunking is the simplest approach. You pick a token count, then slice your text into pieces of that length. It works, but it commonly cuts mid-sentence and mid-thought, leaving the retrieval model to guess where one idea ends and another begins.
+
+Recursive chunking starts with larger separators (double newlines, then single newlines, then sentences, then words) and only falls through to the next level if a chunk is still too big. This preserves more structure but is harder to reason about for novel text shapes.
+
+Sentence-based chunking respects natural language boundaries. It groups sentences until a target size is reached. Good for prose, less useful for code or tabular data.
+
+Paragraph-based chunking is the coarsest of the four. It treats double-newline-separated blocks as atomic units. Great for well-structured documents, weak when paragraphs are very long or very short.
+
+Overlap, sometimes called stride, addresses the boundary problem by including the tail of the previous chunk at the start of the next. Typical values are 10 to 20 percent of chunk size. More overlap means more redundancy in your vector store but better context preservation across chunk boundaries.</textarea>
+      <div class="control-row" style="margin-top: 16px;">
+        <div></div>
+        <div>
+          <label for="size">Target chunk size (tokens)</label>
+          <input type="number" id="size" value="100" min="20" max="2000">
+        </div>
+        <div>
+          <label for="overlap">Overlap (tokens)</label>
+          <input type="number" id="overlap" value="20" min="0" max="500">
+        </div>
+        <div>
+          <label for="ratio">Chars/token ratio</label>
+          <input type="number" id="ratio" value="4" min="1" max="20" step="0.5">
+        </div>
+      </div>
+    </div>
+
+    <div class="strategies" id="strategies"></div>
+
+    <div class="help">
+      <strong>Reading the output.</strong> Highlighted regions are bytes shared with the adjacent chunk (overlap). Stats show: chunk count, mean/min/max tokens, total tokens (corpus size + overlap inflation). For a fair comparison, watch how each strategy handles sentence boundaries near your target size.
+    </div>
+
+    <section style="margin-top: 36px;">
+      <div class="section-title">Picking a strategy</div>
+      <table style="width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--rule); font-size: 13px;">
+        <thead style="background: var(--rule-soft);">
+          <tr><th style="text-align: left; padding: 10px 14px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em;">Source type</th><th style="text-align: left; padding: 10px 14px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em;">Suggested</th><th style="text-align: left; padding: 10px 14px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em;">Why</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding: 10px 14px; border-bottom: 1px dashed var(--rule-soft);">Long-form prose</td><td style="padding: 10px 14px; border-bottom: 1px dashed var(--rule-soft);">Recursive or sentence</td><td style="padding: 10px 14px; border-bottom: 1px dashed var(--rule-soft);">Preserves sentence-level coherence.</td></tr>
+          <tr><td style="padding: 10px 14px; border-bottom: 1px dashed var(--rule-soft);">Technical docs with headings</td><td style="padding: 10px 14px; border-bottom: 1px dashed var(--rule-soft);">Paragraph</td><td style="padding: 10px 14px; border-bottom: 1px dashed var(--rule-soft);">Headings act as natural boundaries.</td></tr>
+          <tr><td style="padding: 10px 14px; border-bottom: 1px dashed var(--rule-soft);">Source code</td><td style="padding: 10px 14px; border-bottom: 1px dashed var(--rule-soft);">AST-based (not shown)</td><td style="padding: 10px 14px; border-bottom: 1px dashed var(--rule-soft);">Splitting on tokens breaks scope. None of the four shown handle code well.</td></tr>
+          <tr><td style="padding: 10px 14px;">Mixed-quality scrapes</td><td style="padding: 10px 14px;">Fixed with high overlap</td><td style="padding: 10px 14px;">Bad input deserves redundant chunks.</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    Single HTML file. No upload, no telemetry. Token counts are character-based approximations using the chars/token ratio above.
+    <br>MIT licensed. <a href="https://github.com/0xelitesystem/rag-chunk-visualizer">Source on GitHub</a>.
+  </footer>
+</div>
+
+<script>
+function tokensFromChars(chars, ratio) { return Math.ceil(chars / ratio); }
+function charsFromTokens(tokens, ratio) { return Math.floor(tokens * ratio); }
+
+function fixedChunk(text, size, overlap, ratio) {
+  const sizeChars = charsFromTokens(size, ratio);
+  const overlapChars = charsFromTokens(overlap, ratio);
+  const step = Math.max(1, sizeChars - overlapChars);
+  const chunks = [];
+  for (let i = 0; i < text.length; i += step) {
+    const chunk = text.slice(i, i + sizeChars);
+    if (!chunk.trim()) continue;
+    chunks.push({
+      text: chunk,
+      overlapPrev: i > 0 ? Math.min(overlapChars, chunk.length) : 0,
+      overlapNext: (i + sizeChars < text.length) ? Math.min(overlapChars, chunk.length) : 0
+    });
+    if (i + sizeChars >= text.length) break;
+  }
+  return chunks;
+}
+
+function recursiveChunk(text, size, overlap, ratio) {
+  const sizeChars = charsFromTokens(size, ratio);
+  const seps = ['\n\n', '\n', '. ', ' '];
+  function split(t, sepIdx) {
+    if (t.length <= sizeChars) return [t];
+    if (sepIdx >= seps.length) {
+      const out = [];
+      for (let i = 0; i < t.length; i += sizeChars) out.push(t.slice(i, i + sizeChars));
+      return out;
+    }
+    const parts = t.split(seps[sepIdx]);
+    const result = [];
+    let buf = '';
+    for (const p of parts) {
+      const candidate = buf ? buf + seps[sepIdx] + p : p;
+      if (candidate.length <= sizeChars) {
+        buf = candidate;
+      } else {
+        if (buf) result.push(buf);
+        if (p.length > sizeChars) {
+          result.push(...split(p, sepIdx + 1));
+          buf = '';
+        } else {
+          buf = p;
+        }
+      }
+    }
+    if (buf) result.push(buf);
+    return result;
+  }
+  const raw = split(text, 0).filter(c => c.trim());
+  const overlapChars = charsFromTokens(overlap, ratio);
+  return raw.map((c, idx) => {
+    let chunk = c;
+    let opPrev = 0;
+    if (idx > 0 && overlapChars > 0) {
+      const tail = raw[idx-1].slice(-overlapChars);
+      chunk = tail + ' ' + c;
+      opPrev = tail.length;
+    }
+    return {
+      text: chunk,
+      overlapPrev: opPrev,
+      overlapNext: (idx < raw.length - 1 && overlapChars > 0) ? Math.min(overlapChars, chunk.length) : 0
+    };
+  });
+}
+
+function sentenceChunk(text, size, overlap, ratio) {
+  const sizeChars = charsFromTokens(size, ratio);
+  const sentences = text.match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g) || [text];
+  const chunks = [];
+  let buf = [];
+  let bufLen = 0;
+  const overlapChars = charsFromTokens(overlap, ratio);
+  for (const s of sentences) {
+    if (bufLen + s.length > sizeChars && buf.length > 0) {
+      const chunk = buf.join('');
+      chunks.push(chunk);
+      buf = overlapChars > 0 ? [chunk.slice(-overlapChars), s] : [s];
+      bufLen = buf.join('').length;
+    } else {
+      buf.push(s);
+      bufLen += s.length;
+    }
+  }
+  if (buf.length) chunks.push(buf.join(''));
+  return chunks.map((c, idx) => ({
+    text: c,
+    overlapPrev: idx > 0 ? Math.min(overlapChars, c.length) : 0,
+    overlapNext: idx < chunks.length - 1 ? Math.min(overlapChars, c.length) : 0
+  }));
+}
+
+function paragraphChunk(text, size, overlap, ratio) {
+  const sizeChars = charsFromTokens(size, ratio);
+  const paras = text.split(/\n\n+/).filter(p => p.trim());
+  const chunks = [];
+  let buf = [];
+  let bufLen = 0;
+  for (const p of paras) {
+    if (bufLen + p.length > sizeChars && buf.length > 0) {
+      chunks.push(buf.join('\n\n'));
+      buf = [p];
+      bufLen = p.length;
+    } else {
+      buf.push(p);
+      bufLen += p.length + 2;
+    }
+  }
+  if (buf.length) chunks.push(buf.join('\n\n'));
+  return chunks.map(c => ({ text: c, overlapPrev: 0, overlapNext: 0 }));
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderChunk(chunk) {
+  const t = escapeHtml(chunk.text);
+  const prev = chunk.overlapPrev || 0;
+  const next = chunk.overlapNext || 0;
+  if (prev === 0 && next === 0) return t;
+  const head = prev > 0 ? '<span class="overlap">' + t.slice(0, prev) + '</span>' : '';
+  const tail = next > 0 ? '<span class="overlap">' + t.slice(t.length - next) + '</span>' : '';
+  const middle = t.slice(prev, t.length - next);
+  return head + middle + tail;
+}
+
+function stats(chunks, ratio) {
+  if (chunks.length === 0) return { count: 0, total: 0, mean: 0, min: 0, max: 0 };
+  const lens = chunks.map(c => tokensFromChars(c.text.length, ratio));
+  return {
+    count: chunks.length,
+    total: lens.reduce((a, b) => a + b, 0),
+    mean: Math.round(lens.reduce((a, b) => a + b, 0) / lens.length),
+    min: Math.min(...lens),
+    max: Math.max(...lens)
+  };
+}
+
+function render() {
+  const text = document.getElementById('text').value;
+  const size = parseInt(document.getElementById('size').value) || 100;
+  const overlap = parseInt(document.getElementById('overlap').value) || 0;
+  const ratio = parseFloat(document.getElementById('ratio').value) || 4;
+  const sourceTokens = tokensFromChars(text.length, ratio);
+
+  const strategies = [
+    { name: 'Fixed-size', desc: 'Slice every N tokens. Simplest, cuts mid-sentence.', chunks: fixedChunk(text, size, overlap, ratio) },
+    { name: 'Recursive', desc: 'Falls through separators: paragraph → line → sentence → word.', chunks: recursiveChunk(text, size, overlap, ratio) },
+    { name: 'Sentence', desc: 'Groups sentences until target size, then breaks.', chunks: sentenceChunk(text, size, overlap, ratio) },
+    { name: 'Paragraph', desc: 'Treats double-newline blocks as atomic units.', chunks: paragraphChunk(text, size, overlap, ratio) }
+  ];
+
+  const wrap = document.getElementById('strategies');
+  wrap.innerHTML = '';
+  for (const s of strategies) {
+    const st = stats(s.chunks, ratio);
+    const div = document.createElement('div');
+    div.className = 'strategy';
+    div.innerHTML = `
+      <div class="strategy-name">${s.name}</div>
+      <div class="strategy-desc">${s.desc}</div>
+      <div class="stats">
+        <span><strong>${st.count}</strong> chunks</span>
+        <span>mean <strong>${st.mean}</strong> tok</span>
+        <span>range <strong>${st.min}-${st.max}</strong></span>
+        <span>total <strong>${st.total}</strong> (source ${sourceTokens})</span>
+      </div>
+      <div class="chunks">${s.chunks.map((c, i) => `
+        <div class="chunk">
+          <div class="chunk-meta">Chunk ${i + 1} · ${tokensFromChars(c.text.length, ratio)} tok</div>
+          ${renderChunk(c)}
+        </div>
+      `).join('')}</div>
+    `;
+    wrap.appendChild(div);
+  }
+}
+
+document.querySelectorAll('textarea, input').forEach(el => el.addEventListener('input', render));
+
+const root = document.documentElement;
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  root.setAttribute('data-theme', 'dark');
+}
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  const c = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', c === 'dark' ? 'light' : 'dark');
+});
+
+render();
+</script>
+</body>
+</html>
