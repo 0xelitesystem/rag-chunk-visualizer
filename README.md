@@ -11,7 +11,7 @@ Browser-only, single HTML file.
 Paste a passage. Set chunk size, overlap, and chars-per-token ratio. Get four parallel views:
 
 - **Fixed-size**: slice every N tokens
-- **Recursive**: fall through paragraph → line → sentence → word
+- **Recursive**: fall through paragraph -> line -> sentence -> word
 - **Sentence**: group sentences until target size
 - **Paragraph**: double-newline-separated atomic units
 

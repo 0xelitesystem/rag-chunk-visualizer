@@ -92,7 +92,7 @@ footer a { color: var(--accent); }
   <header>
     <div>
       <h1>RAG Chunk Visualizer</h1>
-      <div class="cardno">CARD No. 2026 · CHUNKING REFERENCE</div>
+      <div class="cardno">CARD No. 2026 &middot; CHUNKING REFERENCE</div>
     </div>
     <button class="theme" id="theme-toggle" aria-label="Toggle theme">Toggle theme</button>
   </header>
@@ -309,7 +309,7 @@ function render() {
 
   const strategies = [
     { name: 'Fixed-size', desc: 'Slice every N tokens. Simplest, cuts mid-sentence.', chunks: fixedChunk(text, size, overlap, ratio) },
-    { name: 'Recursive', desc: 'Falls through separators: paragraph → line → sentence → word.', chunks: recursiveChunk(text, size, overlap, ratio) },
+    { name: 'Recursive', desc: 'Falls through separators: paragraph -> line -> sentence -> word.', chunks: recursiveChunk(text, size, overlap, ratio) },
     { name: 'Sentence', desc: 'Groups sentences until target size, then breaks.', chunks: sentenceChunk(text, size, overlap, ratio) },
     { name: 'Paragraph', desc: 'Treats double-newline blocks as atomic units.', chunks: paragraphChunk(text, size, overlap, ratio) }
   ];
@@ -331,7 +331,7 @@ function render() {
       </div>
       <div class="chunks">${s.chunks.map((c, i) => `
         <div class="chunk">
-          <div class="chunk-meta">Chunk ${i + 1} · ${tokensFromChars(c.text.length, ratio)} tok</div>
+          <div class="chunk-meta">Chunk ${i + 1} &middot; ${tokensFromChars(c.text.length, ratio)} tok</div>
           ${renderChunk(c)}
         </div>
       `).join('')}</div>
