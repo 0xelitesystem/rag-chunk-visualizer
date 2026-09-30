@@ -35,7 +35,7 @@
   --accent-soft: #3a2418;
   --overlap: rgba(216, 98, 74, 0.22);
   --chunk-a: #3a3018;
-  --chunk-b: #4a3d24;
+  --chunk-b: #483b23;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -354,7 +354,7 @@ function render() {
         <span>range <strong>${st.min}-${st.max}</strong></span>
         <span>total <strong>${st.total}</strong> (source ${sourceTokens})</span>
       </div>
-      <div class="chunks">${s.chunks.map((c, i) => `
+      <div class="chunks" tabindex="0" role="region" aria-label="${s.name} chunks">${s.chunks.map((c, i) => `
         <div class="chunk">
           <div class="chunk-meta">Chunk ${i + 1} &middot; ${tokensFromChars(c.text.length, ratio)} tok</div>
           ${renderChunk(c)}
