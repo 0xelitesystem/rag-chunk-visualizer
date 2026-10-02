@@ -6,6 +6,13 @@ See how four different chunking strategies split your text. Side by side. With o
 
 Browser-only, single HTML file.
 
+## Use
+
+1. Paste a passage into the Source text box (a sample is already loaded).
+2. Set the target chunk size, the overlap in tokens, and the chars-per-token ratio.
+3. Compare the four strategy panels. They update as you type, with overlapping text highlighted.
+4. Check each panel's chunk count and mean, min and max tokens before picking a strategy.
+
 ## What it does
 
 Paste a passage. Set chunk size, overlap, and chars-per-token ratio. Get four parallel views:
@@ -21,7 +28,7 @@ Each view shows chunk count, mean/min/max tokens, total tokens (including overla
 
 Picking a chunking strategy is one of the most underestimated decisions in RAG. Most projects start with "fixed 500 tokens, 50 overlap" because that is what a tutorial used, then discover months later that retrieval quality is mediocre because the strategy doesn't match the source content.
 
-Reading about chunking is one thing. Seeing what each strategy actually produces on your specific text is another. This tool gives you that view immediately, without writing code or running a notebook.
+Reading about chunking is one thing. Seeing what each strategy actually produces on your specific text is another. This tool gives you that view immediately, without writing code or running a notebook. It is one HTML file with no tracking and no dependencies, MIT licensed.
 
 ## Reading the output
 
@@ -50,6 +57,19 @@ Tokens are estimated as `chars / ratio` (default 4 chars per token, which is a r
 - `5`: heavy whitespace or formatting
 
 For exact token counts use the actual tokenizer for your target model.
+
+## Privacy
+
+Everything runs in your browser. The page makes no network requests, and the text you paste is never sent anywhere or stored. The only thing saved is your light or dark theme choice, kept in localStorage under the key `theme`.
+
+## Run locally
+
+```
+git clone https://github.com/0xelitesystem/rag-chunk-visualizer
+cd rag-chunk-visualizer
+```
+
+Open `index.html` in a browser, or serve the folder with `python -m http.server` and visit http://localhost:8000.
 
 ## Build
 
